@@ -114,6 +114,31 @@ To output a literal `{@` in the rendered HTML, use `{@@`:
 <!-- outputs: Use {@extend layout @} to extend a layout. -->
 ```
 
+## Compact / Seal — Template Flattening
+
+Post-compilation step. Inlines all `{{template}}`/`{{block}}` calls into a single-participant template.
+
+```go
+// Compact — best effort. Skips unresolvable slots.
+compacted, err := htmltpl.Compact(tpls["pages/home"])
+
+// Seal — strict. Errors if any slot can't be resolved.
+sealed, err := htmltpl.Seal(tpls["pages/home"])
+
+// CompactAll / SealAll — run on entire map. All-or-nothing.
+err := htmltpl.CompactAll(tpls)
+err := htmltpl.SealAll(tpls)
+```
+
+Data argument handling:
+- `nil`/omitted/`.` — inline as-is
+- `.Foo`, `.Foo.Bar` — inline with dot prepending (scope-aware)
+- `.Method "arg"` — inline with paren-wrapping: `(.User.Method "arg").Field`
+- Literals (`"hello"`, `42`) — can't inline. Error if participant accesses fields.
+- Complex (`$var`, pipes) — can't inline. Compact skips, Seal errors.
+
+Scope-aware: `{{with}}`/`{{range}}` arguments are rewritten, inner content left as-is (dot is rebased).
+
 ## Rules
 
 1. `{@extend@}` — zero or one per file, at the top
